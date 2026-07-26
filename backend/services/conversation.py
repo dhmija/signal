@@ -5,13 +5,18 @@ from sqlalchemy.orm import Session, selectinload
 from models.conversation import Conversation, ConversationMember
 from models.message import Message
 from models.user import User
-from schemas.conversation import ConversationCreate, ConversationResponse
+from schemas.conversation import (
+    AddMemberRequest,
+    ConversationCreate,
+    ConversationResponse,
+    GroupUpdate,
+    MemberResponse,
+)
 
 
 def _format_conversation(db: Session, conv: Conversation, current_user_id: int) -> ConversationResponse:
     participants = [m.user for m in conv.members]
 
-    # Fetch last message
     last_msg = (
         db.query(Message)
         .filter(Message.conversation_id == conv.id)
@@ -29,7 +34,6 @@ def _format_conversation(db: Session, conv: Conversation, current_user_id: int) 
             "created_at": last_msg.created_at.isoformat(),
         }
 
-    # Count unread messages sent by others
     unread_count = (
         db.query(Message)
         .filter(
@@ -165,3 +169,162 @@ def get_conversation_by_id(
     )
 
     return _format_conversation(db, conv, current_user_id)
+
+
+def update_group_info(
+    db: Session, conversation_id: int, current_user_id: int, payload: GroupUpdate
+) -> ConversationResponse:
+    conv, membership = _get_group_and_check_admin(db, conversation_id, current_user_id)
+
+    if payload.name is not None:
+        conv.name = payload.name
+    if payload.avatar_url is not None:
+        conv.avatar_url = payload.avatar_url
+
+    db.commit()
+    db.refresh(conv)
+    return _format_conversation(db, conv, current_user_id)
+
+
+def get_group_members(db: Session, conversation_id: int, current_user_id: int) -> List[MemberResponse]:
+    user_mem = (
+        db.query(ConversationMember)
+        .filter(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user_id,
+        )
+        .first()
+    )
+    if not user_mem:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+
+    members = (
+        db.query(ConversationMember)
+        .options(selectinload(ConversationMember.user))
+        .filter(ConversationMember.conversation_id == conversation_id)
+        .all()
+    )
+    return [MemberResponse.model_validate(m) for m in members]
+
+
+def add_group_member(
+    db: Session, conversation_id: int, current_user_id: int, payload: AddMemberRequest
+) -> MemberResponse:
+    conv, _ = _get_group_and_check_admin(db, conversation_id, current_user_id)
+
+    target_user = db.query(User).filter(User.id == payload.user_id).first()
+    if not target_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    existing = (
+        db.query(ConversationMember)
+        .filter(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == payload.user_id,
+        )
+        .first()
+    )
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User already in group"
+        )
+
+    member = ConversationMember(
+        conversation_id=conversation_id, user_id=payload.user_id, role=payload.role
+    )
+    db.add(member)
+    db.commit()
+
+    loaded_mem = (
+        db.query(ConversationMember)
+        .options(selectinload(ConversationMember.user))
+        .filter(ConversationMember.id == member.id)
+        .first()
+    )
+    return MemberResponse.model_validate(loaded_mem)
+
+
+def remove_group_member(
+    db: Session, conversation_id: int, current_user_id: int, target_user_id: int
+) -> None:
+    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conv or conv.type != "group":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Conversation is not a group"
+        )
+
+    current_mem = (
+        db.query(ConversationMember)
+        .filter(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user_id,
+        )
+        .first()
+    )
+    if not current_mem:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
+        )
+
+    if target_user_id != current_user_id and current_mem.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only group admins can remove other members",
+        )
+
+    target_mem = (
+        db.query(ConversationMember)
+        .filter(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == target_user_id,
+        )
+        .first()
+    )
+    if not target_mem:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Member not found in group"
+        )
+
+    db.delete(target_mem)
+    db.commit()
+
+
+def delete_conversation(db: Session, conversation_id: int, current_user_id: int) -> None:
+    conv, _ = _get_group_and_check_admin(db, conversation_id, current_user_id)
+    db.delete(conv)
+    db.commit()
+
+
+def _get_group_and_check_admin(
+    db: Session, conversation_id: int, current_user_id: int
+) -> tuple[Conversation, ConversationMember]:
+    conv = (
+        db.query(Conversation)
+        .options(selectinload(Conversation.members).selectinload(ConversationMember.user))
+        .filter(Conversation.id == conversation_id)
+        .first()
+    )
+    if not conv or conv.type != "group":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Conversation is not a group"
+        )
+
+    membership = (
+        db.query(ConversationMember)
+        .filter(
+            ConversationMember.conversation_id == conversation_id,
+            ConversationMember.user_id == current_user_id,
+        )
+        .first()
+    )
+    if not membership or membership.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only group admins can perform this action",
+        )
+
+    return conv, membership

@@ -3,25 +3,24 @@
 import { useEffect, useRef } from "react"
 import { useAuthStore } from "@/store/auth"
 import { useSocketStore } from "@/store/socket"
-import type { Message } from "@/types"
+import type { Conversation, Message } from "@/types"
 import { MessageBubble } from "./MessageBubble"
 import { TypingIndicator } from "./TypingIndicator"
 
 interface MessageListProps {
   conversationId: number
+  conversation?: Conversation
   messages: Message[]
   isLoading: boolean
 }
 
-export function MessageList({ conversationId, messages, isLoading }: MessageListProps) {
+export function MessageList({ conversationId, conversation, messages, isLoading }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const currentUser = useAuthStore((state) => state.user)
 
-  // Track active typing users for this conversation
   const typingUsers = useSocketStore((state) => state.typingUsers[conversationId])
   const isTyping = typingUsers && typingUsers.size > 0
 
-  // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
@@ -36,6 +35,8 @@ export function MessageList({ conversationId, messages, isLoading }: MessageList
     )
   }
 
+  const isGroup = conversation?.type === "group"
+
   return (
     <div
       ref={scrollRef}
@@ -46,13 +47,18 @@ export function MessageList({ conversationId, messages, isLoading }: MessageList
           No messages yet. Send a message to start chatting!
         </div>
       ) : (
-        messages.map((message) => (
-          <MessageBubble
-            key={message.id}
-            message={message}
-            isOwn={message.sender_id === currentUser?.id}
-          />
-        ))
+        messages.map((message) => {
+          const sender = conversation?.participants.find((p) => p.id === message.sender_id)
+          return (
+            <MessageBubble
+              key={message.id}
+              message={message}
+              isOwn={message.sender_id === currentUser?.id}
+              showSenderName={isGroup}
+              senderName={sender?.display_name || message.sender?.display_name}
+            />
+          )
+        })
       )}
 
       {isTyping && <TypingIndicator />}

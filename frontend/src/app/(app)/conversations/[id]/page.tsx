@@ -45,6 +45,7 @@ export default function ConversationDetailPage({ params }: ConversationPageProps
       <ConversationHeader conversation={conversation} />
       <MessageList
         conversationId={conversationId}
+        conversation={conversation}
         messages={messages}
         isLoading={isMsgsLoading}
       />

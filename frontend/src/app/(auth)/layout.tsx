@@ -1,14 +1,27 @@
-import type { ReactNode } from "react"
+"use client"
 
-// Centered auth layout — Signal shows auth screens as full-page centered content
-// with a subtle background, not as a modal over the app shell.
+import { useRouter } from "next/navigation"
+import { useEffect, type ReactNode } from "react"
+
+import { useAuthStore } from "@/store/auth"
+
 export default function AuthLayout({ children }: { children: ReactNode }) {
+  const token = useAuthStore((state) => state.token)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (token) {
+      router.replace("/conversations")
+    }
+  }, [token, router])
+
+  if (token) return null
+
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-12">
       {/* Signal wordmark */}
       <div className="mb-10 flex flex-col items-center gap-3">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-          {/* Signal-style pen/lock icon */}
           <svg
             viewBox="0 0 24 24"
             fill="none"

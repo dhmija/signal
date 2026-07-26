@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { Avatar } from "@/components/Avatar"
 import { cn, formatRelativeTime } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
+import { useSocketStore } from "@/store/socket"
 import type { Conversation } from "@/types"
 
 interface ConversationItemProps {
@@ -15,10 +16,13 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
   const params = useParams()
   const currentUser = useAuthStore((state) => state.user)
 
+  // Real-time typing status check from WebSocket store
+  const typingUsers = useSocketStore((state) => state.typingUsers[conversation.id])
+  const isTyping = typingUsers && Array.from(typingUsers).some((uid) => uid !== currentUser?.id)
+
   const activeId = params?.id ? Number(params.id) : null
   const isActive = activeId === conversation.id
 
-  // Display details calculation
   let name = conversation.name
   let avatarUrl = conversation.avatar_url
   let isOnline: boolean | undefined = undefined
@@ -39,9 +43,11 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
     ? formatRelativeTime(conversation.last_message.created_at)
     : formatRelativeTime(conversation.updated_at)
 
-  const preview = conversation.last_message
-    ? conversation.last_message.body
-    : "No messages yet"
+  const preview = isTyping
+    ? "Typing..."
+    : conversation.last_message
+      ? conversation.last_message.body
+      : "No messages yet"
 
   return (
     <Link
@@ -67,8 +73,15 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
         </div>
 
         <div className="flex items-center justify-between gap-1 mt-0.5">
-          <p className="truncate text-xs text-muted-foreground">{preview}</p>
-          {conversation.unread_count > 0 && (
+          <p
+            className={cn(
+              "truncate text-xs",
+              isTyping ? "text-primary font-medium italic" : "text-muted-foreground"
+            )}
+          >
+            {preview}
+          </p>
+          {conversation.unread_count > 0 && !isTyping && (
             <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground shrink-0">
               {conversation.unread_count}
             </span>

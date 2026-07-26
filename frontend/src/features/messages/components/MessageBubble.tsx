@@ -7,9 +7,11 @@ import type { Message } from "@/types"
 interface MessageBubbleProps {
   message: Message
   isOwn: boolean
+  showSenderName?: boolean
+  senderName?: string
 }
 
-export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
+export function MessageBubble({ message, isOwn, showSenderName, senderName }: MessageBubbleProps) {
   const isPending = message.status === "sending"
   const isDelivered = message.status === "delivered"
   const isRead = message.status === "read"
@@ -29,6 +31,12 @@ export function MessageBubble({ message, isOwn }: MessageBubbleProps) {
             : "bg-signal-received text-signal-received-fg rounded-bl-xs"
         )}
       >
+        {!isOwn && showSenderName && senderName && (
+          <span className="block text-xs font-semibold text-primary mb-0.5 select-none">
+            {senderName}
+          </span>
+        )}
+
         <p className="whitespace-pre-wrap leading-relaxed">{message.body}</p>
 
         <div

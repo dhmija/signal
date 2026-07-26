@@ -11,6 +11,28 @@ class ConversationCreate(BaseModel):
     avatar_url: Optional[str] = None
 
 
+class GroupUpdate(BaseModel):
+    name: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+class AddMemberRequest(BaseModel):
+    user_id: int
+    role: str = Field(default="member", pattern="^(member|admin)$")
+
+
+class MemberResponse(BaseModel):
+    id: int
+    conversation_id: int
+    user_id: int
+    role: str
+    joined_at: datetime
+    user: UserResponse
+
+    class Config:
+        from_attributes = True
+
+
 class ConversationResponse(BaseModel):
     id: int
     type: str

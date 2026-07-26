@@ -90,12 +90,12 @@ def seed():
             db.flush()
             users_by_username[user.username] = user
 
-        # 2. Create Contacts
-        alex = users_by_username["alex"]
-        for username, user in users_by_username.items():
-            if username != "alex":
-                db.add(Contact(owner_id=alex.id, contact_id=user.id))
-                db.add(Contact(owner_id=user.id, contact_id=alex.id))
+        # 2. Create All-to-All Contacts (so every user has all other users as contacts)
+        all_users = list(users_by_username.values())
+        for u1 in all_users:
+            for u2 in all_users:
+                if u1.id != u2.id:
+                    db.add(Contact(owner_id=u1.id, contact_id=u2.id))
 
         # 3. Create Direct Conversations & Messages
         direct_chats = [

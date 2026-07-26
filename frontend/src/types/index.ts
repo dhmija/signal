@@ -1,5 +1,4 @@
 // Shared TypeScript types mirroring the backend Pydantic schemas.
-// Kept in one file until the surface grows large enough to warrant splitting.
 
 export interface User {
   id: number
@@ -17,8 +16,6 @@ export interface TokenResponse {
   token_type: string
 }
 
-// Conversation and message types — stubs used by Phase 2/3.
-// Defined here so imports don't need to change when the bodies are filled in.
 export interface Conversation {
   id: number
   type: "direct" | "group"
@@ -28,7 +25,6 @@ export interface Conversation {
   disappearing_timer: number | null
   created_at: string
   updated_at: string
-  // Joined fields returned by the API
   last_message: Message | null
   unread_count: number
   participants: User[]
@@ -44,6 +40,7 @@ export interface Message {
   edited_at: string | null
   created_at: string
   status: "sending" | "sent" | "delivered" | "read"
+  sender?: User
   reactions: Reaction[]
   attachments: Attachment[]
 }
