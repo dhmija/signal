@@ -3,12 +3,43 @@ from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 from models.conversation import Conversation, ConversationMember
+from models.message import Message
 from models.user import User
 from schemas.conversation import ConversationCreate, ConversationResponse
 
 
-def _format_conversation(conv: Conversation) -> ConversationResponse:
+def _format_conversation(db: Session, conv: Conversation, current_user_id: int) -> ConversationResponse:
     participants = [m.user for m in conv.members]
+
+    # Fetch last message
+    last_msg = (
+        db.query(Message)
+        .filter(Message.conversation_id == conv.id)
+        .order_by(Message.id.desc())
+        .first()
+    )
+
+    last_msg_dict = None
+    if last_msg:
+        last_msg_dict = {
+            "id": last_msg.id,
+            "body": last_msg.body,
+            "sender_id": last_msg.sender_id,
+            "status": last_msg.status,
+            "created_at": last_msg.created_at.isoformat(),
+        }
+
+    # Count unread messages sent by others
+    unread_count = (
+        db.query(Message)
+        .filter(
+            Message.conversation_id == conv.id,
+            Message.sender_id != current_user_id,
+            Message.status != "read",
+        )
+        .count()
+    )
+
     return ConversationResponse(
         id=conv.id,
         type=conv.type,
@@ -19,15 +50,14 @@ def _format_conversation(conv: Conversation) -> ConversationResponse:
         created_at=conv.created_at,
         updated_at=conv.updated_at,
         participants=participants,
-        unread_count=0,
-        last_message=None,
+        unread_count=unread_count,
+        last_message=last_msg_dict,
     )
 
 
 def create_conversation(
     db: Session, current_user_id: int, payload: ConversationCreate
 ) -> ConversationResponse:
-    # Ensure current user is in participant list
     all_participant_ids = list(set(payload.participant_ids + [current_user_id]))
 
     if payload.type == "direct":
@@ -36,12 +66,10 @@ def create_conversation(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Direct conversations must have exactly 2 participants",
             )
-        # Check if direct conversation already exists
         existing = _find_existing_direct(db, all_participant_ids[0], all_participant_ids[1])
         if existing:
-            return _format_conversation(existing)
+            return _format_conversation(db, existing, current_user_id)
 
-    # Validate that all users exist
     users = db.query(User).filter(User.id.in_(all_participant_ids)).all()
     if len(users) != len(all_participant_ids):
         raise HTTPException(
@@ -64,14 +92,13 @@ def create_conversation(
 
     db.commit()
 
-    # Re-query with members + users loaded
     conv_loaded = (
         db.query(Conversation)
         .options(selectinload(Conversation.members).selectinload(ConversationMember.user))
         .filter(Conversation.id == conv.id)
         .first()
     )
-    return _format_conversation(conv_loaded)
+    return _format_conversation(db, conv_loaded, current_user_id)
 
 
 def _find_existing_direct(db: Session, user1_id: int, user2_id: int) -> Optional[Conversation]:
@@ -110,13 +137,12 @@ def list_conversations(db: Session, current_user_id: int) -> List[ConversationRe
         .all()
     )
 
-    return [_format_conversation(c) for c in convs]
+    return [_format_conversation(db, c, current_user_id) for c in convs]
 
 
 def get_conversation_by_id(
     db: Session, conversation_id: int, current_user_id: int
 ) -> ConversationResponse:
-    # Ensure current user is a member
     membership = (
         db.query(ConversationMember)
         .filter(
@@ -138,4 +164,4 @@ def get_conversation_by_id(
         .first()
     )
 
-    return _format_conversation(conv)
+    return _format_conversation(db, conv, current_user_id)

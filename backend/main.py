@@ -10,7 +10,9 @@ import models  # Ensures all models are registered with Base metadata before cre
 from routers import auth as auth_router
 from routers import contacts as contacts_router
 from routers import conversations as conversations_router
+from routers import messages as messages_router
 from routers import users as users_router
+from routers import websocket as websocket_router
 
 
 @asynccontextmanager
@@ -37,7 +39,9 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(contacts_router.router)
 app.include_router(conversations_router.router)
+app.include_router(messages_router.router)
 app.include_router(users_router.router)
+app.include_router(websocket_router.router)
 
 
 @app.get("/health")

@@ -3,6 +3,7 @@
 import { MoreVertical, Phone, Video } from "lucide-react"
 import { Avatar } from "@/components/Avatar"
 import { useAuthStore } from "@/store/auth"
+import { useSocketStore } from "@/store/socket"
 import type { Conversation } from "@/types"
 
 interface ConversationHeaderProps {
@@ -11,6 +12,8 @@ interface ConversationHeaderProps {
 
 export function ConversationHeader({ conversation }: ConversationHeaderProps) {
   const currentUser = useAuthStore((state) => state.user)
+  const typingUsers = useSocketStore((state) => state.typingUsers[conversation.id])
+  const isTyping = typingUsers && typingUsers.size > 0
 
   let name = conversation.name
   let avatarUrl = conversation.avatar_url
@@ -25,16 +28,16 @@ export function ConversationHeader({ conversation }: ConversationHeaderProps) {
       name = otherParticipant.display_name
       avatarUrl = otherParticipant.avatar_url
       isOnline = otherParticipant.is_online
-      subtitle = isOnline ? "Online" : "Offline"
+      subtitle = isTyping ? "Typing..." : isOnline ? "Online" : "Offline"
     }
   } else {
-    subtitle = `${conversation.participants.length} members`
+    subtitle = isTyping ? "Someone is typing..." : `${conversation.participants.length} members`
   }
 
   const displayName = name || "Direct Message"
 
   return (
-    <div className="flex h-14 items-center justify-between border-b px-4 bg-background shrink-0">
+    <div className="flex h-14 items-center justify-between border-b px-4 bg-background shrink-0 select-none">
       <div className="flex items-center gap-3">
         <Avatar
           src={avatarUrl}

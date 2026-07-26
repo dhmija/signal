@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime, timedelta
 from core.security import hash_password
 from database import Base, SessionLocal, engine
 import models  # Ensures all models are registered
 from models.contact import Contact
 from models.conversation import Conversation, ConversationMember
+from models.message import Message
 from models.user import User
 
 logging.basicConfig(level=logging.INFO)
@@ -62,12 +64,10 @@ SEED_USERS = [
 
 
 def seed():
-    # Ensure tables exist
     Base.metadata.create_all(bind=engine)
 
     db = SessionLocal()
     try:
-        # Check if already seeded
         if db.query(User).first():
             logger.info("Database already seeded. Skipping.")
             return
@@ -97,16 +97,27 @@ def seed():
                 db.add(Contact(owner_id=alex.id, contact_id=user.id))
                 db.add(Contact(owner_id=user.id, contact_id=alex.id))
 
-        # 3. Create Direct Conversations
-        direct_pairs = [
-            ("alex", "sarah"),
-            ("alex", "marcus"),
-            ("alex", "elena"),
-            ("alex", "david"),
-            ("sarah", "marcus"),
+        # 3. Create Direct Conversations & Messages
+        direct_chats = [
+            ("alex", "sarah", [
+                ("sarah", "Hey Alex! Did you review the new design system tokens?", 10),
+                ("alex", "Yes! The Tailwind v4 oklch palette looks super clean.", 8),
+                ("sarah", "Great! Let me know if you need any component tweaks.", 5),
+                ("alex", "Will do! Starting on real-time messaging now.", 1),
+            ]),
+            ("alex", "marcus", [
+                ("marcus", "Yo Alex, did the WebSocket endpoint handle reconnects properly?", 15),
+                ("alex", "Yeah, the connection manager handles reconnects seamlessly.", 12),
+            ]),
+            ("alex", "elena", [
+                ("elena", "Hey, checked out the crypto module specs.", 30),
+                ("alex", "Nice, keeping auth simple for now with JWTs.", 25),
+            ]),
         ]
 
-        for u1, u2 in direct_pairs:
+        now = datetime.utcnow()
+
+        for u1, u2, msgs in direct_chats:
             user1 = users_by_username[u1]
             user2 = users_by_username[u2]
             conv = Conversation(type="direct", created_by=user1.id)
@@ -115,43 +126,19 @@ def seed():
             db.add(ConversationMember(conversation_id=conv.id, user_id=user1.id, role="member"))
             db.add(ConversationMember(conversation_id=conv.id, user_id=user2.id, role="member"))
 
-        # 4. Create Group Conversations
-        group1 = Conversation(
-            type="group",
-            name="Frontend Guild",
-            avatar_url="https://api.dicebear.com/9.x/identicon/svg?seed=frontend",
-            created_by=alex.id,
-        )
-        db.add(group1)
-        db.flush()
-
-        for u_name in ["alex", "sarah", "priya", "david"]:
-            role = "admin" if u_name == "alex" else "member"
-            db.add(
-                ConversationMember(
-                    conversation_id=group1.id, user_id=users_by_username[u_name].id, role=role
+            for sender_uname, body, minutes_ago in msgs:
+                msg = Message(
+                    conversation_id=conv.id,
+                    sender_id=users_by_username[sender_uname].id,
+                    body=body,
+                    status="read",
+                    created_at=now - timedelta(minutes=minutes_ago),
                 )
-            )
-
-        group2 = Conversation(
-            type="group",
-            name="Security & Architecture",
-            avatar_url="https://api.dicebear.com/9.x/identicon/svg?seed=security",
-            created_by=users_by_username["elena"].id,
-        )
-        db.add(group2)
-        db.flush()
-
-        for u_name in ["elena", "alex", "marcus", "jordan"]:
-            role = "admin" if u_name == "elena" else "member"
-            db.add(
-                ConversationMember(
-                    conversation_id=group2.id, user_id=users_by_username[u_name].id, role=role
-                )
-            )
+                db.add(msg)
+                conv.updated_at = now - timedelta(minutes=minutes_ago)
 
         db.commit()
-        logger.info("Successfully seeded database with 8 users, contacts, and conversations!")
+        logger.info("Successfully seeded database with users, contacts, conversations, and initial messages!")
 
     except Exception as e:
         db.rollback()
