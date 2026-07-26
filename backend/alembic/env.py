@@ -8,7 +8,7 @@ from sqlalchemy import engine_from_config, pool
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from database import Base  # noqa: E402
-import models.user  # noqa: F401, E402 — imported to register User with Base.metadata
+import models  # noqa: F401, E402 — imported to register all models with Base.metadata
 
 config = context.config
 target_metadata = Base.metadata

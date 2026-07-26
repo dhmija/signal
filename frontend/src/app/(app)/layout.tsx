@@ -4,9 +4,8 @@ import { useRouter } from "next/navigation"
 import { useEffect, type ReactNode } from "react"
 
 import { useAuthStore } from "@/store/auth"
+import { Sidebar } from "@/features/conversations/components/Sidebar"
 
-// App layout guards the entire (app) route group.
-// If no token exists, redirect to login immediately without flashing the UI.
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { token } = useAuthStore()
   const router = useRouter()
@@ -21,7 +20,10 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-background">
-      {children}
+      <Sidebar />
+      <main className="flex flex-1 flex-col overflow-hidden">
+        {children}
+      </main>
     </div>
   )
 }

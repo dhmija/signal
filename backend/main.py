@@ -6,14 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from core.config import settings
 from database import Base, engine
+import models  # Ensures all models are registered with Base metadata before create_all
 from routers import auth as auth_router
+from routers import contacts as contacts_router
+from routers import conversations as conversations_router
+from routers import users as users_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    # Auto-create tables in development so `uvicorn main:app` works without
-    # running migrations first. Production deployments should run
-    # `alembic upgrade head` with ENVIRONMENT set to anything other than "development".
     if settings.environment == "development":
         Base.metadata.create_all(bind=engine)
     yield
@@ -34,6 +35,9 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(contacts_router.router)
+app.include_router(conversations_router.router)
+app.include_router(users_router.router)
 
 
 @app.get("/health")
