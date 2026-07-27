@@ -1,7 +1,7 @@
 "use client"
 
 import { useQuery } from "@tanstack/react-query"
-import { Check, Loader2, Users, X } from "lucide-react"
+import { Check, Loader2, Search, Users, X } from "lucide-react"
 import { useState } from "react"
 import { Avatar } from "@/components/Avatar"
 import { api } from "@/services/api"
@@ -17,29 +17,51 @@ interface NewGroupModalProps {
 
 export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps) {
   const [name, setName] = useState("")
-  const [selectedUserIds, setSelectedUserIds] = useState<number[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [selectedUsers, setSelectedUsers] = useState<User[]>([])
   const token = useAuthStore((state) => state.token)
+  const currentUser = useAuthStore((state) => state.user)
 
   const { createGroup, isCreating } = useGroupManagement()
 
+  // Fetch contacts
   const contactsQuery = useQuery<{ contact_user: User }[]>({
     queryKey: ["contacts"],
     queryFn: () => api.get("/contacts", token ?? undefined),
     enabled: isOpen && !!token,
   })
 
+  // Search all registered users by query
+  const userSearchQuery = useQuery<User[]>({
+    queryKey: ["users", "search", searchQuery],
+    queryFn: () => api.get(`/users/search?q=${encodeURIComponent(searchQuery.trim())}`, token ?? undefined),
+    enabled: isOpen && !!token && searchQuery.trim().length > 0,
+  })
+
   if (!isOpen) return null
 
-  const contacts = (contactsQuery.data || []).map((c) => c.contact_user)
+  const contacts = (contactsQuery.data || [])
+    .map((c) => c.contact_user)
+    .filter((u) => u.id !== currentUser?.id)
 
-  const toggleUser = (userId: number) => {
-    setSelectedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+  const searchResults = (userSearchQuery.data || []).filter((u) => u.id !== currentUser?.id)
+
+  // Merge list: search results take precedence if querying; otherwise show contacts
+  const displayList: User[] = searchQuery.trim().length > 0
+    ? searchResults
+    : contacts
+
+  const toggleUser = (user: User) => {
+    setSelectedUsers((prev) =>
+      prev.some((u) => u.id === user.id)
+        ? prev.filter((u) => u.id !== user.id)
+        : [...prev, user]
     )
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    const selectedUserIds = selectedUsers.map((u) => u.id)
     if (!name.trim() || selectedUserIds.length === 0) return
 
     try {
@@ -91,34 +113,51 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Select Members ({selectedUserIds.length})
+              Add Members ({selectedUsers.length} selected)
             </label>
-            <div className="max-h-56 overflow-y-auto rounded-lg border border-border/60 bg-[#242424] p-1 space-y-1">
-              {contactsQuery.isLoading && (
+
+            {/* Search Input for User Direct Lookup */}
+            <div className="relative w-full mb-2">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search users by username..."
+                className="w-full rounded-lg border border-border/60 bg-[#252525] py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
+              />
+            </div>
+
+            <div className="max-h-52 overflow-y-auto rounded-lg border border-border/60 bg-[#242424] p-1 space-y-1">
+              {(contactsQuery.isLoading || userSearchQuery.isLoading) && (
                 <div className="flex items-center justify-center gap-2 p-4 text-xs text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Loading contacts...</span>
+                  <span>Searching...</span>
                 </div>
               )}
 
-              {contacts.length === 0 && !contactsQuery.isLoading && (
-                <div className="p-4 text-center text-xs text-muted-foreground">No contacts available to add to group.</div>
+              {displayList.length === 0 && !(contactsQuery.isLoading || userSearchQuery.isLoading) && (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  {searchQuery.trim().length > 0
+                    ? `No users found matching "${searchQuery}"`
+                    : "No contacts available. Use search above to find users by username."}
+                </div>
               )}
 
-              {contacts.map((contact) => {
-                const isSelected = selectedUserIds.includes(contact.id)
+              {displayList.map((user) => {
+                const isSelected = selectedUsers.some((u) => u.id === user.id)
                 return (
                   <button
-                    key={contact.id}
+                    key={user.id}
                     type="button"
-                    onClick={() => toggleUser(contact.id)}
+                    onClick={() => toggleUser(user)}
                     className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#2C2C2C]"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar src={contact.avatar_url} name={contact.display_name} size="sm" />
+                      <Avatar src={user.avatar_url} name={user.display_name} size="sm" />
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">{contact.display_name}</span>
-                        <span className="text-xs text-muted-foreground">@{contact.username}</span>
+                        <span className="font-semibold text-foreground">{user.display_name}</span>
+                        <span className="text-xs text-muted-foreground">@{user.username}</span>
                       </div>
                     </div>
                     {isSelected && (
@@ -142,7 +181,7 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || selectedUserIds.length === 0 || isCreating}
+              disabled={!name.trim() || selectedUsers.length === 0 || isCreating}
               className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary-hover active:scale-95 disabled:opacity-50"
             >
               {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}

@@ -39,5 +39,28 @@ export const registerSchema = z
     path: ["confirmPassword"],
   })
 
+export const forgotPasswordSchema = z
+  .object({
+    username: z.string().min(1, "Please enter your username."),
+    otp: z
+      .string()
+      .min(1, "Verification code is required.")
+      .length(6, "Verification code must be 6 digits.")
+      .regex(/^\d+$/, "Verification code must contain digits only.")
+      .refine((val): val is string => val === MOCK_OTP_HINT, {
+        message: "Invalid verification code.",
+      }),
+    newPassword: z
+      .string()
+      .min(1, "Please enter a new password.")
+      .min(8, "Password must contain at least 8 characters."),
+    confirmNewPassword: z.string().min(1, "Please confirm your new password."),
+  })
+  .refine((data) => data.newPassword === data.confirmNewPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmNewPassword"],
+  })
+
 export type LoginFormValues = z.infer<typeof loginSchema>
 export type RegisterFormValues = z.infer<typeof registerSchema>
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>

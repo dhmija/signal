@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from core.security import create_access_token, hash_password, verify_password
 from models.user import User
-from schemas.auth import MOCK_OTP, LoginRequest, RegisterRequest, TokenResponse
+from schemas.auth import MOCK_OTP, LoginRequest, RegisterRequest, ResetPasswordRequest, TokenResponse
 
 
 def register(payload: RegisterRequest, db: Session) -> TokenResponse:
@@ -56,3 +56,22 @@ def login(payload: LoginRequest, db: Session) -> TokenResponse:
     db.commit()
 
     return TokenResponse(access_token=create_access_token(user.id))
+
+
+def reset_password(payload: ResetPasswordRequest, db: Session) -> dict:
+    if payload.otp != MOCK_OTP:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code",
+        )
+
+    user = db.query(User).filter(User.username.ilike(payload.username.strip())).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    user.hashed_password = hash_password(payload.new_password)
+    db.commit()
+    return {"message": "Password reset successfully"}
