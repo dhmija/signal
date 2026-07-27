@@ -55,17 +55,19 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 select-none">
-      <div className="w-full max-w-md rounded-2xl border bg-card p-6 shadow-xl space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 select-none animate-in fade-in duration-150">
+      <div className="w-full max-w-md rounded-2xl border border-border/80 bg-[#1E1E1E] p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 font-semibold text-lg text-card-foreground">
-            <Users className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2.5 font-bold text-lg text-foreground tracking-tight">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
+              <Users className="h-4 w-4" />
+            </div>
             <span>New Group</span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-[#2A2A2A] hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -73,7 +75,7 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="group-name" className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="group-name" className="text-xs font-semibold text-foreground">
               Group Name
             </label>
             <input
@@ -81,23 +83,26 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Backend Team"
+              placeholder="e.g. Project Team"
               autoFocus
-              className="w-full rounded-lg border bg-input px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+              className="w-full rounded-lg border border-border/60 bg-[#252525] px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label className="text-xs font-semibold text-foreground">
               Select Members ({selectedUserIds.length})
             </label>
-            <div className="max-h-56 overflow-y-auto rounded-lg border bg-input/40 p-1 space-y-1">
+            <div className="max-h-56 overflow-y-auto rounded-lg border border-border/60 bg-[#242424] p-1 space-y-1">
               {contactsQuery.isLoading && (
-                <div className="p-4 text-center text-xs text-muted-foreground">Loading contacts...</div>
+                <div className="flex items-center justify-center gap-2 p-4 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  <span>Loading contacts...</span>
+                </div>
               )}
 
               {contacts.length === 0 && !contactsQuery.isLoading && (
-                <div className="p-4 text-center text-xs text-muted-foreground">No contacts available. Add contacts first.</div>
+                <div className="p-4 text-center text-xs text-muted-foreground">No contacts available to add to group.</div>
               )}
 
               {contacts.map((contact) => {
@@ -107,17 +112,17 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
                     key={contact.id}
                     type="button"
                     onClick={() => toggleUser(contact.id)}
-                    className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-signal-hover"
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#2C2C2C]"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar src={contact.avatar_url} name={contact.display_name} size="sm" />
                       <div className="flex flex-col">
-                        <span className="font-medium text-foreground">{contact.display_name}</span>
+                        <span className="font-semibold text-foreground">{contact.display_name}</span>
                         <span className="text-xs text-muted-foreground">@{contact.username}</span>
                       </div>
                     </div>
                     {isSelected && (
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs">
                         <Check className="h-3 w-3" />
                       </div>
                     )}
@@ -131,14 +136,14 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border px-4 py-2 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              className="rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground hover:bg-[#2A2A2A] transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim() || selectedUserIds.length === 0 || isCreating}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary-hover active:scale-95 disabled:opacity-50"
             >
               {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Create Group

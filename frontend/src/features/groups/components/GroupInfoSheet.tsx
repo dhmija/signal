@@ -96,13 +96,13 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col border-l bg-card p-6 shadow-2xl space-y-6 select-none">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col border-l border-border/60 bg-[#1E1E1E] p-6 shadow-2xl space-y-6 select-none animate-in slide-in-from-right duration-200">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-base text-foreground">Group Info</h3>
+        <h3 className="font-bold text-base text-foreground tracking-tight">Group Details</h3>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors"
+          className="rounded-full p-1.5 text-muted-foreground hover:bg-[#2A2A2A] hover:text-foreground transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -111,19 +111,19 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
       {/* Avatar & Name */}
       <div className="flex flex-col items-center text-center space-y-2">
         <Avatar src={conversation.avatar_url} name={conversation.name || "Group"} size="lg" />
-        <h4 className="font-semibold text-lg text-foreground">{conversation.name}</h4>
-        <span className="text-xs text-muted-foreground">{members.length} members</span>
+        <h4 className="font-bold text-lg tracking-tight text-foreground">{conversation.name}</h4>
+        <span className="text-xs font-medium text-muted-foreground">{members.length} members</span>
       </div>
 
       {/* Members List Section */}
       <div className="flex-1 flex flex-col overflow-hidden space-y-2">
-        <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground">
+        <div className="flex items-center justify-between text-xs font-bold text-muted-foreground uppercase tracking-wider">
           <span>Members</span>
           {isAdmin && (
             <button
               type="button"
               onClick={() => setIsAddingMembers((prev) => !prev)}
-              className="flex items-center gap-1 text-primary hover:underline"
+              className="flex items-center gap-1 text-primary hover:underline font-semibold"
             >
               <UserPlus className="h-3.5 w-3.5" />
               {isAddingMembers ? "Done" : "Add Member"}
@@ -133,8 +133,8 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
 
         {/* Inline Add Member Picker for Admins */}
         {isAddingMembers && isAdmin && (
-          <div className="max-h-40 overflow-y-auto rounded-lg border bg-input/40 p-1 space-y-1">
-            <span className="block text-[11px] font-medium text-muted-foreground px-2 py-1">
+          <div className="max-h-40 overflow-y-auto rounded-lg border border-border/60 bg-[#252525] p-1 space-y-1">
+            <span className="block text-[11px] font-semibold text-muted-foreground px-2 py-1">
               Select contact to add:
             </span>
             {contactsQuery.isLoading && (
@@ -149,11 +149,11 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
                 type="button"
                 onClick={() => handleAddUser(contact.id)}
                 disabled={isAdding}
-                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-signal-hover"
+                className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-[#2F2F2F]"
               >
                 <div className="flex items-center gap-2">
                   <Avatar src={contact.avatar_url} name={contact.display_name} size="sm" />
-                  <span className="font-medium text-foreground">{contact.display_name}</span>
+                  <span className="font-semibold text-foreground">{contact.display_name}</span>
                 </div>
                 <Plus className="h-3.5 w-3.5 text-primary" />
               </button>
@@ -162,7 +162,7 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
         )}
 
         {/* Member List */}
-        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
           {isLoadingMembers && (
             <div className="p-4 text-center text-xs text-muted-foreground">Loading members...</div>
           )}
@@ -170,7 +170,7 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
           {members.map((member) => (
             <div
               key={member.id}
-              className="flex items-center justify-between rounded-lg p-2 hover:bg-signal-hover transition-colors"
+              className="flex items-center justify-between rounded-xl p-2 hover:bg-[#252525] transition-colors"
             >
               <div className="flex items-center gap-3">
                 <Avatar
@@ -181,9 +181,9 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
                 />
                 <div className="flex flex-col">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-medium text-foreground">{member.user.display_name}</span>
+                    <span className="text-sm font-semibold text-foreground">{member.user.display_name}</span>
                     {member.role === "admin" && (
-                      <span className="flex items-center gap-0.5 rounded-xs bg-primary/20 px-1 py-0.2 text-[10px] font-semibold text-primary">
+                      <span className="flex items-center gap-0.5 rounded-full bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
                         <Shield className="h-2.5 w-2.5" />
                         Admin
                       </span>
@@ -198,7 +198,7 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
                   type="button"
                   onClick={() => handleRemove(member.user_id)}
                   disabled={isRemoving}
-                  className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                  className="rounded-full p-1.5 text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors"
                   title="Remove Member"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -210,13 +210,13 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
       </div>
 
       {/* Leave or Delete Group Actions */}
-      <div className="border-t pt-4 space-y-2">
+      <div className="border-t border-border/60 pt-4 space-y-2">
         {isAdmin ? (
           <button
             type="button"
             onClick={handleDeleteGroup}
             disabled={isDeleting}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/15 px-4 py-2.5 text-xs font-bold text-destructive transition-all hover:bg-destructive/25"
           >
             <Trash2 className="h-4 w-4" />
             Delete Group
@@ -226,7 +226,7 @@ export function GroupInfoSheet({ conversation, isOpen, onClose }: GroupInfoSheet
             type="button"
             onClick={handleLeaveGroup}
             disabled={isRemoving}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-destructive/10 px-4 py-2 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/20"
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-destructive/15 px-4 py-2.5 text-xs font-bold text-destructive transition-all hover:bg-destructive/25"
           >
             <LogOut className="h-4 w-4" />
             Leave Group

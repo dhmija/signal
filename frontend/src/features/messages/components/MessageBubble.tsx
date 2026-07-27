@@ -64,10 +64,10 @@ export function MessageBubble({
         {/* Main Message Bubble */}
         <div
           className={cn(
-            "relative rounded-2xl px-4 py-2 text-sm shadow-sm break-words flex flex-col space-y-1 min-w-[120px]",
+            "relative rounded-[18px] px-3.5 py-2 text-sm shadow-xs break-words flex flex-col space-y-1 min-w-[100px]",
             isOwn
-              ? "bg-signal-sent text-signal-sent-fg rounded-br-xs"
-              : "bg-signal-received text-signal-received-fg rounded-bl-xs"
+              ? "bg-[#1054DB] text-white rounded-br-[4px]"
+              : "bg-[#282828] text-foreground rounded-bl-[4px]"
           )}
         >
           {!isOwn && showSenderName && senderName && (
@@ -144,17 +144,21 @@ export function MessageBubble({
 
           {/* Reaction Pills Container */}
           {reactionGroups.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1 pt-1 select-none">
+            <div className="flex flex-wrap gap-1 mt-1 pt-0.5 select-none">
               {reactionGroups.map(([emoji, group]) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => onToggleReaction?.(message.id, emoji)}
                   className={cn(
-                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border transition-colors",
+                    "flex items-center gap-1 rounded-full px-2 py-0.5 text-xs border transition-all cursor-pointer",
                     group.hasReacted
-                      ? "bg-primary/20 border-primary/40 font-semibold"
-                      : "bg-muted/40 border-transparent hover:bg-muted"
+                      ? isOwn
+                        ? "bg-white/20 border-white/40 text-white font-semibold"
+                        : "bg-primary/20 border-primary/40 text-primary font-semibold"
+                      : isOwn
+                        ? "bg-black/20 border-transparent text-white/90 hover:bg-black/30"
+                        : "bg-white/5 border-transparent text-foreground/90 hover:bg-white/10"
                   )}
                 >
                   <span>{emoji}</span>
