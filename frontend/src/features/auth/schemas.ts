@@ -1,4 +1,5 @@
 import { z } from "zod"
+import { MOCK_OTP_HINT } from "@/lib/constants"
 
 export const loginSchema = z.object({
   username: z.string().min(1, "Please enter your username."),
@@ -22,7 +23,10 @@ export const registerSchema = z
       .string()
       .min(1, "Verification code is required.")
       .length(6, "Verification code must be 6 digits.")
-      .regex(/^\d+$/, "Verification code must contain digits only."),
+      .regex(/^\d+$/, "Verification code must contain digits only.")
+      .refine((val): val is string => val === MOCK_OTP_HINT, {
+        message: "Invalid verification code.",
+      }),
     display_name: z
       .string()
       .min(1, "Please enter your display name.")

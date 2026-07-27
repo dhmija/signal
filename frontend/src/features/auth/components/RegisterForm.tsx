@@ -30,12 +30,17 @@ export function RegisterForm() {
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { avatar_url: "", display_name: "" },
+    mode: "onChange",
+    defaultValues: { avatar_url: "", display_name: "", username: "", password: "", confirmPassword: "", otp: "" },
   })
 
   const username = useWatch({ control, name: "username" })
   const displayName = useWatch({ control, name: "display_name" })
   const avatarUrlInput = useWatch({ control, name: "avatar_url" })
+  const password = useWatch({ control, name: "password" })
+  const confirmPassword = useWatch({ control, name: "confirmPassword" })
+
+  const isPasswordMismatch = Boolean(confirmPassword && password !== confirmPassword)
 
   const advance = async () => {
     const fieldsPerStep: Array<Array<keyof RegisterFormValues>> = [
@@ -185,12 +190,14 @@ export function RegisterForm() {
                   className={cn(
                     "w-full rounded-lg border bg-input px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60",
                     "transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
-                    errors.confirmPassword && "border-destructive focus:ring-destructive",
+                    (errors.confirmPassword || isPasswordMismatch) && "border-destructive focus:ring-destructive",
                   )}
                   {...register("confirmPassword")}
                 />
-                {errors.confirmPassword && (
-                  <p className="text-xs text-destructive font-medium">{errors.confirmPassword.message}</p>
+                {(errors.confirmPassword?.message || isPasswordMismatch) && (
+                  <p className="text-xs text-destructive font-medium">
+                    {errors.confirmPassword?.message || "Passwords do not match."}
+                  </p>
                 )}
               </div>
 
