@@ -19,8 +19,18 @@ from routers import websocket as websocket_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    if settings.environment == "development":
-        Base.metadata.create_all(bind=engine)
+    # Ensure all database tables exist in any environment (Dev, Render, Vercel)
+    # create_all is safe & idempotent: it inspects schema and creates missing tables without affecting existing data
+    Base.metadata.create_all(bind=engine)
+
+    # Automatically run database seed if database is completely empty (e.g. fresh Render deployment)
+    try:
+        from seed import seed
+        seed()
+    except Exception as e:
+        import logging
+        logging.getLogger("uvicorn.error").warning(f"Auto-seed check: {e}")
+
     yield
 
 
