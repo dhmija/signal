@@ -3,6 +3,7 @@
 import { Check, CheckCheck, Clock, FileText, Download, Reply, Smile } from "lucide-react"
 import Image from "next/image"
 import { useMemo, useState } from "react"
+import { ImageViewerModal } from "@/components/ImageViewerModal"
 import { API_BASE } from "@/lib/constants"
 import { cn, formatRelativeTime } from "@/lib/utils"
 import { useAuthStore } from "@/store/auth"
@@ -29,6 +30,7 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const currentUser = useAuthStore((state) => state.user)
   const [showPicker, setShowPicker] = useState(false)
+  const [activeImageSrc, setActiveImageSrc] = useState<string | null>(null)
 
   const isPending = message.status === "sending"
   const isDelivered = message.status === "delivered"
@@ -102,13 +104,17 @@ export function MessageBubble({
                 const itemKey = att.id ? `att-${att.id}` : `att-idx-${index}`
 
                 return isImage ? (
-                  <div key={itemKey} className="relative overflow-hidden rounded-xl max-h-60 max-w-sm border">
+                  <div
+                    key={itemKey}
+                    onClick={() => setActiveImageSrc(fullUrl)}
+                    className="relative overflow-hidden rounded-xl border border-border/40 max-w-[280px] sm:max-w-[320px] max-h-[360px] cursor-pointer group transition-opacity hover:opacity-95"
+                  >
                     <Image
                       src={fullUrl}
                       alt={att.file_name}
-                      width={320}
-                      height={240}
-                      className="object-cover w-full h-full"
+                      width={400}
+                      height={300}
+                      className="w-auto h-auto max-w-full max-h-[360px] object-contain rounded-xl"
                       unoptimized
                     />
                   </div>
@@ -235,6 +241,11 @@ export function MessageBubble({
             ))}
           </div>
         )}
+        {/* Fullscreen Lightbox Modal */}
+        <ImageViewerModal
+          src={activeImageSrc}
+          onClose={() => setActiveImageSrc(null)}
+        />
       </div>
     </div>
   )
