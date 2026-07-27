@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from core.deps import get_current_user, get_db
@@ -8,6 +8,12 @@ from schemas.user import UserResponse
 from services import auth as auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@router.get("/check-username")
+def check_username(username: str = Query(..., min_length=1), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username.ilike(username.strip())).first()
+    return {"exists": user is not None}
 
 
 @router.post("/register", response_model=TokenResponse, status_code=201)

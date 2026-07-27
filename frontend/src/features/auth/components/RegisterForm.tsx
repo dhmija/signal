@@ -8,7 +8,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 
-import { MOCK_OTP_HINT } from "@/lib/constants"
+import { MOCK_OTP_HINT, API_BASE } from "@/lib/constants"
 import { cn, dicebearUrl } from "@/lib/utils"
 import { useRegister } from "../hooks/useRegister"
 import { registerSchema, type RegisterFormValues } from "../schemas"
@@ -20,6 +20,7 @@ export function RegisterForm() {
   const { register: registerUser, isPending, error } = useRegister()
   const [step, setStep] = useState<Step>(0)
   const [showPassword, setShowPassword] = useState(false)
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false)
 
   const {
     register,
@@ -27,6 +28,8 @@ export function RegisterForm() {
     trigger,
     control,
     setValue,
+    setError,
+    clearErrors,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -43,17 +46,42 @@ export function RegisterForm() {
   const isPasswordMismatch = Boolean(confirmPassword && password !== confirmPassword)
 
   const advance = async () => {
-    const fieldsPerStep: Array<Array<keyof RegisterFormValues>> = [
-      ["username", "password", "confirmPassword"],
-      ["otp"],
-      ["display_name", "avatar_url"],
-    ]
-    const valid = await trigger(fieldsPerStep[step])
-    if (valid) {
-      if (step === 1 && !displayName) {
+    if (step === 0) {
+      clearErrors("username")
+
+      const validStep0 = await trigger(["username", "password", "confirmPassword"])
+      if (!validStep0 || isPasswordMismatch) return
+
+      setIsCheckingUsername(true)
+      try {
+        const res = await fetch(`${API_BASE}/auth/check-username?username=${encodeURIComponent(username.trim())}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (data.exists) {
+            setError("username", { type: "manual", message: "This username is already taken." })
+            setIsCheckingUsername(false)
+            return
+          }
+        }
+      } catch (err) {
+        console.error("Username check failed:", err)
+      } finally {
+        setIsCheckingUsername(false)
+      }
+
+      setStep(1)
+      return
+    }
+
+    if (step === 1) {
+      const validStep1 = await trigger(["otp"])
+      if (!validStep1) return
+
+      if (!displayName) {
         setValue("display_name", username || "")
       }
-      setStep((s) => Math.min(s + 1, 2) as Step)
+      setStep(2)
+      return
     }
   }
 
@@ -140,7 +168,11 @@ export function RegisterForm() {
                     "transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
                     errors.username && "border-destructive focus:ring-destructive",
                   )}
-                  {...register("username")}
+                  {...register("username", {
+                    onChange: () => {
+                      clearErrors("username")
+                    },
+                  })}
                 />
                 {errors.username && (
                   <p className="text-xs text-destructive font-medium">{errors.username.message}</p>
@@ -204,9 +236,11 @@ export function RegisterForm() {
               <button
                 type="button"
                 onClick={advance}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary-hover active:scale-[0.99] cursor-pointer"
+                disabled={isCheckingUsername}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary-hover active:scale-[0.99] disabled:opacity-60 cursor-pointer"
               >
-                Continue
+                {isCheckingUsername && <Loader2 size={16} className="animate-spin" />}
+                {isCheckingUsername ? "Checking username..." : "Continue"}
               </button>
             </motion.div>
           )}
