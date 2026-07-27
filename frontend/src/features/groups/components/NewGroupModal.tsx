@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Avatar } from "@/components/Avatar"
 import { api } from "@/services/api"
 import { useAuthStore } from "@/store/auth"
-import type { User } from "@/types"
+import type { Conversation, User } from "@/types"
 import { useGroupManagement } from "../hooks/useGroupManagement"
 
 interface NewGroupModalProps {
@@ -24,6 +24,13 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
 
   const { createGroup, isCreating } = useGroupManagement()
 
+  // Fetch recent conversations for quick user suggestions
+  const conversationsQuery = useQuery<Conversation[]>({
+    queryKey: ["conversations"],
+    queryFn: () => api.get("/conversations", token ?? undefined),
+    enabled: isOpen && !!token,
+  })
+
   // Fetch contacts
   const contactsQuery = useQuery<{ contact_user: User }[]>({
     queryKey: ["contacts"],
@@ -40,16 +47,31 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
 
   if (!isOpen) return null
 
-  const contacts = (contactsQuery.data || [])
-    .map((c) => c.contact_user)
-    .filter((u) => u.id !== currentUser?.id)
+  // Collect unique users from recent conversations
+  const recentUsersMap = new Map<number, User>()
+  for (const conv of conversationsQuery.data || []) {
+    for (const p of conv.participants) {
+      if (p.id !== currentUser?.id) {
+        recentUsersMap.set(p.id, p)
+      }
+    }
+  }
 
+  // Collect unique users from contacts
+  for (const c of contactsQuery.data || []) {
+    const u = c.contact_user
+    if (u.id !== currentUser?.id) {
+      recentUsersMap.set(u.id, u)
+    }
+  }
+
+  const suggestedUsers = Array.from(recentUsersMap.values())
   const searchResults = (userSearchQuery.data || []).filter((u) => u.id !== currentUser?.id)
 
-  // Merge list: search results take precedence if querying; otherwise show contacts
+  // Merge list: search results take precedence if querying; otherwise show recent & contacts
   const displayList: User[] = searchQuery.trim().length > 0
     ? searchResults
-    : contacts
+    : suggestedUsers
 
   const toggleUser = (user: User) => {
     setSelectedUsers((prev) =>
@@ -89,7 +111,7 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-1.5 text-muted-foreground hover:bg-[#2A2A2A] hover:text-foreground transition-colors"
+            className="rounded-full p-1.5 text-muted-foreground hover:bg-[#2A2A2A] hover:text-foreground transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -123,24 +145,24 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search users by username..."
+                placeholder="Search recent conversations or username..."
                 className="w-full rounded-lg border border-border/60 bg-[#252525] py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-ring"
               />
             </div>
 
             <div className="max-h-52 overflow-y-auto rounded-lg border border-border/60 bg-[#242424] p-1 space-y-1">
-              {(contactsQuery.isLoading || userSearchQuery.isLoading) && (
+              {(contactsQuery.isLoading || userSearchQuery.isLoading || conversationsQuery.isLoading) && (
                 <div className="flex items-center justify-center gap-2 p-4 text-xs text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <span>Searching...</span>
+                  <span>Loading members...</span>
                 </div>
               )}
 
-              {displayList.length === 0 && !(contactsQuery.isLoading || userSearchQuery.isLoading) && (
+              {displayList.length === 0 && !(contactsQuery.isLoading || userSearchQuery.isLoading || conversationsQuery.isLoading) && (
                 <div className="p-4 text-center text-xs text-muted-foreground">
                   {searchQuery.trim().length > 0
                     ? `No users found matching "${searchQuery}"`
-                    : "No contacts available. Use search above to find users by username."}
+                    : "No recent users or contacts found. Use search above to find users by username."}
                 </div>
               )}
 
@@ -151,7 +173,7 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
                     key={user.id}
                     type="button"
                     onClick={() => toggleUser(user)}
-                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#2C2C2C]"
+                    className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-[#2C2C2C] cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <Avatar src={user.avatar_url} name={user.display_name} size="sm" />
@@ -175,14 +197,14 @@ export function NewGroupModal({ isOpen, onClose, onCreated }: NewGroupModalProps
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground hover:bg-[#2A2A2A] transition-colors"
+              className="rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-foreground hover:bg-[#2A2A2A] transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!name.trim() || selectedUsers.length === 0 || isCreating}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary-hover active:scale-95 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all hover:bg-primary-hover active:scale-95 disabled:opacity-50 cursor-pointer"
             >
               {isCreating && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Create Group

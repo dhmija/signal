@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 from models.conversation import Conversation, ConversationMember
 from models.message import Attachment, Message, Reaction
 from schemas.message import MessageCreate, MessageResponse, ReactionResponse
+from services.contact import ensure_mutual_contact
 
 
 def create_message(db: Session, sender_id: int, payload: MessageCreate) -> MessageResponse:
@@ -47,6 +48,18 @@ def create_message(db: Session, sender_id: int, payload: MessageCreate) -> Messa
     conv = db.query(Conversation).filter(Conversation.id == payload.conversation_id).first()
     if conv:
         conv.updated_at = datetime.utcnow()
+
+    # Automatically ensure mutual contacts for all conversation members on first message
+    all_members = (
+        db.query(ConversationMember.user_id)
+        .filter(ConversationMember.conversation_id == payload.conversation_id)
+        .all()
+    )
+    member_ids = [m[0] for m in all_members]
+    for uid1 in member_ids:
+        for uid2 in member_ids:
+            if uid1 != uid2:
+                ensure_mutual_contact(db, uid1, uid2)
 
     db.commit()
 

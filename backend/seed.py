@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 from core.security import hash_password
 from database import Base, SessionLocal, engine
 import models  # Ensures all models are registered
-from models.contact import Contact
 from models.conversation import Conversation, ConversationMember
 from models.message import Message
 from models.user import User
@@ -90,14 +89,7 @@ def seed():
             db.flush()
             users_by_username[user.username] = user
 
-        # 2. Create All-to-All Contacts (so every user has all other users as contacts)
-        all_users = list(users_by_username.values())
-        for u1 in all_users:
-            for u2 in all_users:
-                if u1.id != u2.id:
-                    db.add(Contact(owner_id=u1.id, contact_id=u2.id))
-
-        # 3. Create Direct Conversations & Messages
+        # 2. Create Direct Conversations & Messages (contacts will be generated naturally)
         direct_chats = [
             ("alex", "sarah", [
                 ("sarah", "Hey Alex! Did you review the new design system tokens?", 10),
@@ -138,7 +130,7 @@ def seed():
                 conv.updated_at = now - timedelta(minutes=minutes_ago)
 
         db.commit()
-        logger.info("Successfully seeded database with users, contacts, conversations, and initial messages!")
+        logger.info("Successfully seeded database with users, conversations, and initial messages!")
 
     except Exception as e:
         db.rollback()

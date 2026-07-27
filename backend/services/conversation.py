@@ -12,6 +12,7 @@ from schemas.conversation import (
     GroupUpdate,
     MemberResponse,
 )
+from services.contact import ensure_mutual_contact
 
 
 def _format_conversation(db: Session, conv: Conversation, current_user_id: int) -> ConversationResponse:
@@ -93,6 +94,12 @@ def create_conversation(
         role = "admin" if pid == current_user_id and payload.type == "group" else "member"
         member = ConversationMember(conversation_id=conv.id, user_id=pid, role=role)
         db.add(member)
+
+    # Automatically add mutual contact relationship when users are added to the same group or direct chat
+    for uid1 in all_participant_ids:
+        for uid2 in all_participant_ids:
+            if uid1 != uid2:
+                ensure_mutual_contact(db, uid1, uid2)
 
     db.commit()
 
@@ -237,6 +244,19 @@ def add_group_member(
         conversation_id=conversation_id, user_id=payload.user_id, role=payload.role
     )
     db.add(member)
+
+    # Ensure all group members become mutual contacts when a new member joins
+    all_members = (
+        db.query(ConversationMember.user_id)
+        .filter(ConversationMember.conversation_id == conversation_id)
+        .all()
+    )
+    member_ids = list(set([m[0] for m in all_members] + [payload.user_id]))
+    for uid1 in member_ids:
+        for uid2 in member_ids:
+            if uid1 != uid2:
+                ensure_mutual_contact(db, uid1, uid2)
+
     db.commit()
 
     loaded_mem = (
