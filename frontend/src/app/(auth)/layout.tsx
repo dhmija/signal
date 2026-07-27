@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useEffect, type ReactNode } from "react"
 
+import { SignalLogo } from "@/components/SignalLogo"
 import { useAuthStore } from "@/store/auth"
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
@@ -18,23 +19,13 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   if (token) return null
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-12">
-      {/* Signal wordmark */}
-      <div className="mb-10 flex flex-col items-center gap-3">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            className="h-8 w-8 text-primary-foreground"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"
-              fill="currentColor"
-            />
-          </svg>
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 py-12 select-none">
+      {/* Official Signal Icon Header */}
+      <div className="mb-8 flex flex-col items-center gap-3">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-transparent transition-transform hover:scale-105">
+          <SignalLogo size={64} />
         </div>
-        <span className="text-lg font-semibold tracking-tight text-foreground">Signal</span>
+        <span className="text-xl font-bold tracking-tight text-foreground">Signal</span>
       </div>
 
       {children}

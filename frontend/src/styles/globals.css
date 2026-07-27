@@ -1,22 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/*
-  ---break---
-*/
-
 @custom-variant dark (&:is(.dark *));
 
 /*
-  Signal Design System
-  ---------------------
-  shadcn-managed tokens use oklch (the format shadcn init writes).
-  Signal-specific tokens (bubbles, sidebar, hover states) use HSL so the
-  hsl() wrapper in @theme inline resolves correctly.
+  Signal Desktop Official Design System Tokens
+  -------------------------------------------
+  Authentic Signal Dark Mode Palette (#1b1b1b surface, #2C6BED ultramarine primary)
 */
 
 @theme inline {
-  /* shadcn base tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -24,6 +17,7 @@
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
@@ -36,7 +30,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Signal-specific tokens (oklch values set directly in :root/.dark) */
+  /* Signal Message & Chrome Tokens */
+  --color-signal-blue: #2C6BED;
+  --color-signal-blue-hover: #1D54D4;
   --color-signal-sent: var(--signal-sent);
   --color-signal-sent-fg: var(--signal-sent-fg);
   --color-signal-received: var(--signal-received);
@@ -45,97 +41,99 @@
   --color-signal-hover: var(--signal-hover);
   --color-signal-active: var(--signal-active);
 
-  /* Typography */
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  /* Radius scale */
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
 }
 
 /* ─── Light Theme ─────────────────────────────────────────────────────────── */
 :root {
-  --radius: 0.625rem;
+  --radius: 12px;
 
-  /* shadcn base */
-  --background: oklch(0.99 0 0);
-  --foreground: oklch(0.18 0.02 255);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 255);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 255);
-  --primary: oklch(0.55 0.18 250);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.96 0 0);
-  --secondary-foreground: oklch(0.18 0.02 255);
-  --muted: oklch(0.96 0 0);
-  --muted-foreground: oklch(0.52 0.01 255);
-  --accent: oklch(0.96 0 0);
-  --accent-foreground: oklch(0.18 0.02 255);
-  --destructive: oklch(0.6 0.22 25);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.55 0.18 250);
+  --background: #FFFFFF;
+  --foreground: #121212;
+  --card: #F6F6F6;
+  --card-foreground: #121212;
+  --popover: #FFFFFF;
+  --popover-foreground: #121212;
+  --primary: #2C6BED;
+  --primary-hover: #1D54D4;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F2F5;
+  --secondary-foreground: #121212;
+  --muted: #F0F2F5;
+  --muted-foreground: #717579;
+  --accent: #E4E8F0;
+  --accent-foreground: #121212;
+  --destructive: #F14C4C;
+  --border: #E0E2E5;
+  --input: #F0F2F5;
+  --ring: #2C6BED;
 
-  /* Signal-specific — used for message bubbles and layout chrome */
-  --signal-sent: oklch(0.55 0.13 155);
-  --signal-sent-fg: oklch(1 0 0);
-  --signal-received: oklch(1 0 0);
-  --signal-received-fg: oklch(0.18 0.02 255);
-  --signal-sidebar: oklch(0.97 0 0);
-  --signal-hover: oklch(0.93 0 0);
-  --signal-active: oklch(0.88 0.05 250);
+  --signal-sent: #2C6BED;
+  --signal-sent-fg: #FFFFFF;
+  --signal-received: #F0F2F5;
+  --signal-received-fg: #121212;
+  --signal-sidebar: #F7F8F9;
+  --signal-hover: #E8ECEF;
+  --signal-active: #DCE2E8;
 }
 
-/* ─── Dark Theme ──────────────────────────────────────────────────────────── */
+/* ─── Dark Theme (Signal Desktop Authentic Palette) ───────────────────────── */
 .dark {
-  /* Base surfaces — Signal uses a very dark charcoal, not pure black */
-  --background: oklch(0.15 0.01 255);
-  --foreground: oklch(0.88 0.01 255);
-  --card: oklch(0.18 0.01 255);
-  --card-foreground: oklch(0.88 0.01 255);
-  --popover: oklch(0.18 0.01 255);
-  --popover-foreground: oklch(0.88 0.01 255);
-  --primary: oklch(0.62 0.18 250);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.22 0.01 255);
-  --secondary-foreground: oklch(0.88 0.01 255);
-  --muted: oklch(0.22 0.01 255);
-  --muted-foreground: oklch(0.58 0.01 255);
-  --accent: oklch(0.22 0.01 255);
-  --accent-foreground: oklch(0.88 0.01 255);
-  --destructive: oklch(0.65 0.22 25);
-  --border: oklch(0.25 0.01 255);
-  --input: oklch(0.25 0.01 255);
-  --ring: oklch(0.62 0.18 250);
+  --background: #111111;
+  --foreground: #EDEDED;
+  --card: #1E1E1E;
+  --card-foreground: #EDEDED;
+  --popover: #1E1E1E;
+  --popover-foreground: #EDEDED;
+  --primary: #2C6BED;
+  --primary-hover: #3E7BF6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #252525;
+  --secondary-foreground: #EDEDED;
+  --muted: #252525;
+  --muted-foreground: #999999;
+  --accent: #2A2A2A;
+  --accent-foreground: #EDEDED;
+  --destructive: #FF5A5A;
+  --border: #2E2E2E;
+  --input: #242424;
+  --ring: #2C6BED;
 
-  /* Signal-specific */
-  --signal-sent: oklch(0.35 0.1 155);
-  --signal-sent-fg: oklch(0.95 0 0);
-  --signal-received: oklch(0.20 0.01 255);
-  --signal-received-fg: oklch(0.88 0.01 255);
-  --signal-sidebar: oklch(0.12 0.01 255);
-  --signal-hover: oklch(0.20 0.01 255);
-  --signal-active: oklch(0.22 0.05 250);
+  /* Signal Desktop Specific Bubble Surfaces */
+  --signal-sent: #1054DB;
+  --signal-sent-fg: #FFFFFF;
+  --signal-received: #282828;
+  --signal-received-fg: #EDEDED;
+  --signal-sidebar: #171717;
+  --signal-hover: #262626;
+  --signal-active: #303030;
 }
 
-/* ─── Base Styles ─────────────────────────────────────────────────────────── */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-none;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-background text-foreground font-sans antialiased select-none;
+  }
+
+  /* Focus outline styles matching Signal Desktop */
+  :focus-visible {
+    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 }
 
-/* Minimal Signal-style scrollbar */
+/* Signal Scrollbars */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -143,10 +141,10 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.5 0 0 / 0.3);
+  background: rgba(125, 125, 125, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.5 0 0 / 0.5);
+  background: rgba(125, 125, 125, 0.45);
 }

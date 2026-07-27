@@ -14,17 +14,21 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: "Signal",
-  description: "A private messenger",
+  title: "Signal Desktop",
+  description: "Speak Freely. Say 'hello' to a private messaging experience.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <head>
         <ThemeScript />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
       </head>
-      <body className={inter.variable}>
+      <body className={`${inter.variable} bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-primary`}>
         <QueryProvider>
           <AuthProvider>
             <SocketProvider>{children}</SocketProvider>

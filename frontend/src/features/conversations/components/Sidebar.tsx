@@ -4,6 +4,7 @@ import { Edit, LogOut, MessageSquarePlus } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Avatar } from "@/components/Avatar"
+import { SignalLogo } from "@/components/SignalLogo"
 import { NewGroupModal } from "@/features/groups/components/NewGroupModal"
 import { useAuthStore } from "@/store/auth"
 import { ConversationList } from "./ConversationList"
@@ -28,7 +29,8 @@ export function Sidebar() {
     <aside className="flex h-full w-80 flex-col border-r bg-signal-sidebar shrink-0 select-none">
       {/* Header */}
       <div className="flex h-14 items-center justify-between border-b px-4">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <SignalLogo size={22} />
           {user && (
             <Avatar
               src={user.avatar_url}
@@ -36,7 +38,7 @@ export function Sidebar() {
               size="sm"
             />
           )}
-          <span className="font-semibold text-sm text-foreground">Chats</span>
+          <span className="font-bold text-sm tracking-tight text-foreground">Chats</span>
         </div>
 
         <div className="flex items-center gap-1 text-muted-foreground">
