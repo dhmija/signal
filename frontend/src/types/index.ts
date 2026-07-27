@@ -36,6 +36,12 @@ export interface Message {
   sender_id: number
   body: string
   reply_to_id: number | null
+  reply_to?: {
+    id: number
+    sender_id: number
+    body: string
+    sender?: User
+  } | null
   disappears_at: string | null
   edited_at: string | null
   created_at: string

@@ -6,19 +6,13 @@ import { useSocketStore } from "@/store/socket"
 
 export function SocketProvider({ children }: { children: ReactNode }) {
   const user = useAuthStore((state) => state.user)
-  const { connect, disconnect } = useSocketStore()
+  const connect = useSocketStore((state) => state.connect)
 
   useEffect(() => {
     if (user?.id) {
       connect(user.id)
-    } else {
-      disconnect()
     }
-
-    return () => {
-      disconnect()
-    }
-  }, [user?.id, connect, disconnect])
+  }, [user?.id, connect])
 
   return <>{children}</>
 }

@@ -12,9 +12,18 @@ interface MessageListProps {
   conversation?: Conversation
   messages: Message[]
   isLoading: boolean
+  onReply?: (message: Message) => void
+  onToggleReaction?: (messageId: number, emoji: string) => void
 }
 
-export function MessageList({ conversationId, conversation, messages, isLoading }: MessageListProps) {
+export function MessageList({
+  conversationId,
+  conversation,
+  messages,
+  isLoading,
+  onReply,
+  onToggleReaction,
+}: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const currentUser = useAuthStore((state) => state.user)
 
@@ -56,6 +65,8 @@ export function MessageList({ conversationId, conversation, messages, isLoading 
               isOwn={message.sender_id === currentUser?.id}
               showSenderName={isGroup}
               senderName={sender?.display_name || message.sender?.display_name}
+              onReply={onReply}
+              onToggleReaction={onToggleReaction}
             />
           )
         })

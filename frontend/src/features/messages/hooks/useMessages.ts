@@ -3,15 +3,16 @@ import { useEffect, useMemo } from "react"
 import { api } from "@/services/api"
 import { useAuthStore } from "@/store/auth"
 import { useSocketStore } from "@/store/socket"
-import type { Message } from "@/types"
+import type { Attachment, Message } from "@/types"
 
 export function useMessages(conversationId: number) {
   const token = useAuthStore((state) => state.token)
   const user = useAuthStore((state) => state.user)
   const queryClient = useQueryClient()
 
-  const setOnMessageReceived = useSocketStore((state) => state.setOnMessageReceived)
-  const setOnStatusUpdated = useSocketStore((state) => state.setOnStatusUpdated)
+  const subscribeMessageReceived = useSocketStore((state) => state.subscribeMessageReceived)
+  const subscribeStatusUpdated = useSocketStore((state) => state.subscribeStatusUpdated)
+  const subscribeReactionUpdated = useSocketStore((state) => state.subscribeReactionUpdated)
 
   const queryKey = useMemo(() => ["messages", conversationId], [conversationId])
 
@@ -33,13 +34,18 @@ export function useMessages(conversationId: number) {
   const mutateMarkRead = markReadMutation.mutate
 
   const sendMessageMutation = useMutation({
-    mutationFn: (body: string) =>
+    mutationFn: (payload: { body: string; reply_to_id?: number | null; attachments?: Partial<Attachment>[] }) =>
       api.post<Message>(
         "/messages",
-        { conversation_id: conversationId, body },
+        {
+          conversation_id: conversationId,
+          body: payload.body,
+          reply_to_id: payload.reply_to_id,
+          attachments: payload.attachments,
+        },
         token ?? undefined
       ),
-    onMutate: async (body: string) => {
+    onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey })
       const previousMessages = queryClient.getQueryData<Message[]>(queryKey) || []
 
@@ -47,14 +53,14 @@ export function useMessages(conversationId: number) {
         id: Date.now(),
         conversation_id: conversationId,
         sender_id: user?.id || 0,
-        body,
+        body: payload.body,
         status: "sending",
         created_at: new Date().toISOString(),
-        reply_to_id: null,
+        reply_to_id: payload.reply_to_id || null,
         disappears_at: null,
         edited_at: null,
         reactions: [],
-        attachments: [],
+        attachments: (payload.attachments as Attachment[]) || [],
       }
 
       queryClient.setQueryData<Message[]>(queryKey, [...previousMessages, tempMessage])
@@ -73,8 +79,54 @@ export function useMessages(conversationId: number) {
     },
   })
 
+  const toggleReactionMutation = useMutation({
+    mutationFn: (payload: { messageId: number; emoji: string }) =>
+      api.post<Message>(
+        `/messages/${payload.messageId}/reactions`,
+        { emoji: payload.emoji },
+        token ?? undefined
+      ),
+    onMutate: async (payload) => {
+      await queryClient.cancelQueries({ queryKey })
+      const previousMessages = queryClient.getQueryData<Message[]>(queryKey) || []
+
+      // Optimistically update reactions
+      queryClient.setQueryData<Message[]>(queryKey, (old = []) =>
+        old.map((m) => {
+          if (m.id !== payload.messageId) return m
+
+          const currentReactions = m.reactions || []
+          const existingSameEmojiIdx = currentReactions.findIndex(
+            (r) => r.user_id === user?.id && r.emoji === payload.emoji
+          )
+
+          const updatedReactions = currentReactions.filter((r) => r.user_id !== user?.id)
+
+          if (existingSameEmojiIdx < 0) {
+            updatedReactions.push({
+              id: Date.now(),
+              message_id: payload.messageId,
+              user_id: user?.id || 0,
+              emoji: payload.emoji,
+              created_at: new Date().toISOString(),
+            })
+          }
+
+          return { ...m, reactions: updatedReactions }
+        })
+      )
+
+      return { previousMessages }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(queryKey, context.previousMessages)
+      }
+    },
+  })
+
   useEffect(() => {
-    setOnMessageReceived((newMsg: Message) => {
+    const unsubMsg = subscribeMessageReceived((newMsg: Message) => {
       if (newMsg.conversation_id === conversationId) {
         queryClient.setQueryData<Message[]>(queryKey, (old = []) => {
           if (old.some((m) => m.id === newMsg.id)) return old
@@ -84,7 +136,7 @@ export function useMessages(conversationId: number) {
       queryClient.invalidateQueries({ queryKey: ["conversations"] })
     })
 
-    setOnStatusUpdated((payload) => {
+    const unsubStatus = subscribeStatusUpdated((payload) => {
       if (payload.conversation_id === conversationId) {
         queryClient.setQueryData<Message[]>(queryKey, (old = []) =>
           old.map((m) =>
@@ -93,7 +145,21 @@ export function useMessages(conversationId: number) {
         )
       }
     })
-  }, [conversationId, queryClient, queryKey, setOnMessageReceived, setOnStatusUpdated])
+
+    const unsubReaction = subscribeReactionUpdated((payload) => {
+      if (payload.conversation_id === conversationId) {
+        queryClient.setQueryData<Message[]>(queryKey, (old = []) =>
+          old.map((m) => (m.id === payload.message_id ? payload.updated_message : m))
+        )
+      }
+    })
+
+    return () => {
+      unsubMsg()
+      unsubStatus()
+      unsubReaction()
+    }
+  }, [conversationId, queryClient, queryKey, subscribeMessageReceived, subscribeStatusUpdated, subscribeReactionUpdated])
 
   const messageCount = query.data?.length || 0
   useEffect(() => {
@@ -108,5 +174,6 @@ export function useMessages(conversationId: number) {
     isError: query.isError,
     sendMessage: sendMessageMutation.mutate,
     isSending: sendMessageMutation.isPending,
+    toggleReaction: toggleReactionMutation.mutate,
   }
 }
