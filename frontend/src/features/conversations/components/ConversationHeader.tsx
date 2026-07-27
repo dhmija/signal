@@ -41,7 +41,7 @@ export function ConversationHeader({ conversation }: ConversationHeaderProps) {
 
   return (
     <>
-      <div className="flex h-14 items-center justify-between border-b px-4 bg-background shrink-0 select-none">
+      <div className="flex h-14 items-center justify-between border-b border-border/60 px-4 bg-[#181818] shrink-0 select-none">
         <div
           onClick={() => conversation.type === "group" && setIsSheetOpen(true)}
           className="flex items-center gap-3 cursor-pointer hover:opacity-90 transition-opacity"
@@ -52,12 +52,12 @@ export function ConversationHeader({ conversation }: ConversationHeaderProps) {
             size="sm"
             isOnline={conversation.type === "direct" ? isOnline : undefined}
           />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold leading-none text-foreground">
+          <div className="flex flex-col leading-tight">
+            <span className="text-sm font-bold tracking-tight text-foreground">
               {displayName}
             </span>
             {subtitle && (
-              <span className="text-xs text-muted-foreground mt-0.5 leading-none">
+              <span className="text-[11px] font-medium text-muted-foreground mt-0.5">
                 {subtitle}
               </span>
             )}
@@ -67,14 +67,14 @@ export function ConversationHeader({ conversation }: ConversationHeaderProps) {
         <div className="flex items-center gap-1 text-muted-foreground">
           <button
             type="button"
-            className="rounded-full p-2 hover:bg-signal-hover hover:text-foreground transition-colors"
+            className="rounded-full p-2 hover:bg-[#252525] hover:text-foreground transition-colors"
             title="Voice Call"
           >
             <Phone className="h-4 w-4" />
           </button>
           <button
             type="button"
-            className="rounded-full p-2 hover:bg-signal-hover hover:text-foreground transition-colors"
+            className="rounded-full p-2 hover:bg-[#252525] hover:text-foreground transition-colors"
             title="Video Call"
           >
             <Video className="h-4 w-4" />
@@ -82,7 +82,7 @@ export function ConversationHeader({ conversation }: ConversationHeaderProps) {
           <button
             type="button"
             onClick={() => conversation.type === "group" && setIsSheetOpen(true)}
-            className="rounded-full p-2 hover:bg-signal-hover hover:text-foreground transition-colors"
+            className="rounded-full p-2 hover:bg-[#252525] hover:text-foreground transition-colors"
             title="Group info"
           >
             <MoreVertical className="h-4 w-4" />

@@ -49,7 +49,7 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className="flex flex-1 flex-col overflow-y-auto p-4 space-y-1 bg-background"
+      className="flex flex-1 flex-col overflow-y-auto px-4 pt-10 pb-4 space-y-1 bg-background"
     >
       {messages.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground select-none">

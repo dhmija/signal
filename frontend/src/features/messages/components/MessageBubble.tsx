@@ -212,7 +212,7 @@ export function MessageBubble({
         {showPicker && (
           <div
             className={cn(
-              "absolute -top-10 flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 shadow-xl z-30",
+              "absolute -top-11 flex items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 py-1.5 shadow-xl z-40 animate-in fade-in zoom-in-95 duration-100",
               isOwn ? "right-0" : "left-0"
             )}
           >

@@ -98,19 +98,26 @@ export function MessageInput({
     }
   }
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e)
+    }
+  }
+
   return (
-    <div className="flex flex-col border-t bg-background shrink-0">
+    <div className="flex flex-col border-t border-border/40 bg-[#161616] shrink-0">
       {/* Quoted Reply Preview Bar */}
       {replyingTo && (
-        <div className="flex items-center justify-between border-b bg-muted/40 px-4 py-2 text-xs select-none">
-          <div className="flex items-center gap-2 overflow-hidden border-l-2 border-primary pl-2">
+        <div className="flex items-center justify-between border-b border-border/40 bg-[#202020] px-4 py-2 text-xs select-none">
+          <div className="flex items-center gap-2 overflow-hidden border-l-2 border-primary pl-2.5">
             <span className="font-semibold text-primary">Replying to:</span>
-            <p className="truncate text-muted-foreground">{replyingTo.body}</p>
+            <p className="truncate text-muted-foreground font-medium">{replyingTo.body}</p>
           </div>
           <button
             type="button"
             onClick={onCancelReply}
-            className="rounded-full p-1 text-muted-foreground hover:bg-muted transition-colors"
+            className="rounded-full p-1 text-muted-foreground hover:bg-[#2A2A2A] hover:text-foreground transition-colors"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -119,11 +126,11 @@ export function MessageInput({
 
       {/* Attachment Preview Thumbnails */}
       {attachments.length > 0 && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b overflow-x-auto">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/40 bg-[#1A1A1A] overflow-x-auto">
           {attachments.map((att, idx) => (
-            <div key={idx} className="relative flex items-center gap-2 rounded-lg border bg-card p-2 text-xs">
+            <div key={idx} className="relative flex items-center gap-2 rounded-xl border border-border/60 bg-[#252525] p-2 text-xs">
               <FileText className="h-4 w-4 text-primary shrink-0" />
-              <span className="truncate max-w-[120px] font-medium">{att.file_name}</span>
+              <span className="truncate max-w-[120px] font-medium text-foreground">{att.file_name}</span>
               <button
                 type="button"
                 onClick={() => setAttachments((prev) => prev.filter((_, i) => i !== idx))}
@@ -137,7 +144,7 @@ export function MessageInput({
       )}
 
       {/* Input Row */}
-      <form onSubmit={handleSubmit} className="flex items-center gap-2 p-3">
+      <form onSubmit={handleSubmit} className="flex items-center gap-2 px-4 py-3">
         <input
           type="file"
           ref={fileInputRef}
@@ -149,7 +156,7 @@ export function MessageInput({
           type="button"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading || disabled}
-          className="rounded-full p-2 text-muted-foreground hover:bg-signal-hover hover:text-foreground transition-colors disabled:opacity-50"
+          className="rounded-full p-2 text-muted-foreground/80 hover:bg-[#252525] hover:text-foreground transition-colors disabled:opacity-50"
           title="Attach File"
         >
           {isUploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Paperclip className="h-5 w-5" />}
@@ -157,7 +164,7 @@ export function MessageInput({
 
         <button
           type="button"
-          className="rounded-full p-2 text-muted-foreground hover:bg-signal-hover hover:text-foreground transition-colors"
+          className="rounded-full p-2 text-muted-foreground/80 hover:bg-[#252525] hover:text-foreground transition-colors"
           title="Emoji"
         >
           <Smile className="h-5 w-5" />
@@ -167,15 +174,16 @@ export function MessageInput({
           type="text"
           value={text}
           onChange={(e) => handleTextChange(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Signal message"
           disabled={disabled}
-          className="flex-1 rounded-full border bg-input px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          className="flex-1 rounded-full border border-border/50 bg-[#222222] px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground/60 transition-all focus:bg-[#262626] focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-ring"
         />
 
         <button
           type="submit"
           disabled={(!text.trim() && attachments.length === 0) || disabled || isUploading}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-xs transition-all hover:bg-primary-hover active:scale-95 disabled:opacity-40"
           title="Send Message"
         >
           <Send className="h-4 w-4" />
